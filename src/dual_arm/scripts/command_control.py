@@ -30,13 +30,14 @@ class CommandState:
     raw_text: str = ""
     version: int = 0
 
-
-DEFAULT_POLICY_PATH = ("/home/roma/dual_arm/src/outputs/triple_camera/chunk80/010000/pretrained_model")
+GREEN_POLICY_PATH = ("/home/roma/pt/outputs/triple_camera/chunk80/010000/pretrained_model")
+RED_POLICY_PATH = ("/home/roma/pt/outputs/triple_camera/red_0518_chunk80/checkpoints/010000/pretrained_model")
+BLUE_POLICY_PATH = ("/home/roma/pt/outputs/triple_camera/blue_0518_chunk80/checkpoints/010000/pretrained_model")
 
 POLICY_REGISTRY = {
-    ObjectColor.GREEN: os.getenv("GREEN_POLICY_PATH", DEFAULT_POLICY_PATH),
-    ObjectColor.RED: os.getenv("RED_POLICY_PATH", DEFAULT_POLICY_PATH),
-    ObjectColor.BLUE: os.getenv("BLUE_POLICY_PATH", DEFAULT_POLICY_PATH),
+    ObjectColor.GREEN: os.getenv("GREEN_POLICY_PATH", GREEN_POLICY_PATH),
+    ObjectColor.RED: os.getenv("RED_POLICY_PATH", RED_POLICY_PATH),
+    ObjectColor.BLUE: os.getenv("BLUE_POLICY_PATH", BLUE_POLICY_PATH),
 }
 
 COMMAND_HOST = os.getenv("COMMAND_HOST", "127.0.0.1")

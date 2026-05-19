@@ -127,6 +127,7 @@ class SOFollower(Robot):
         )
 
         self._gripper_load_threshold = 650
+        self.current_target_color = "none"
 
     def _is_ax12a(self, motor_name: str) -> bool:
         return False
@@ -539,14 +540,17 @@ class SOFollower(Robot):
                 corrected_val = max(1080, min(3120, corrected_val))
 
             if motor_name == "gripper":
-                #초록색
-                #corrected_val = max(2800, min(4000, corrected_val))
-                
-                #빨간색
-                #corrected_val = max(3000, min(4000, corrected_val))
+                # 타겟 색상에 따른 동적 그리퍼 범위 설정
+                if self.current_target_color == "green":
+                    corrected_val = max(2800, min(4000, corrected_val))
+                elif self.current_target_color == "red":
+                    corrected_val = max(3000, min(4000, corrected_val))
+                elif self.current_target_color == "blue":
+                    corrected_val = max(2600, min(4000, corrected_val))
+                else:
+                    # 기본 범위 (none 또는 기타)
+                    corrected_val = max(2600, min(4000, corrected_val))
 
-                #파란색
-                corrected_val = max(2600, min(4000, corrected_val))        
             corrected_goal_pos[motor_name] = int(corrected_val)
 
         if corrected_goal_pos:

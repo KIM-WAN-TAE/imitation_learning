@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HMI - Production Control System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="dashboard">
+        <header>
+            <h1></i> Dual Arm Control System</h1>
+            <p>Smart Factory Interface | Production Line A</p>
+        </header>
+
+        <section class="system-status">
+            <div class="status-indicator">
+                <span class="status-label">LINE STATUS</span>
+                <span id="state-val" class="status-value">READY</span>
+            </div>
+            <div class="status-indicator">
+                <span class="status-label">API CONNECTION</span>
+                <span id="conn-val" class="status-value">STABLE</span>
+            </div>
+        </section>
+
+        <section class="control-grid">
+            <button class="btn btn-green" onclick="sendCommand('green')">
+                <i class="fas fa-flask"></i> GREEN PROCESS
+            </button>
+            <button class="btn btn-red" onclick="sendCommand('red')">
+                <i class="fas fa-flask"></i> RED PROCESS
+            </button>
+            <button class="btn btn-blue" onclick="sendCommand('blue')">
+                <i class="fas fa-flask"></i> BLUE PROCESS
+            </button>
+            
+            <button class="btn btn-home" onclick="sendCommand('home')">
+                <i class="fas fa-sync-alt"></i> RESET POSITION
+            </button>
+            <button class="btn btn-exit" onclick="sendCommand('exit')">
+                <i class="fas fa-power-off"></i> SYSTEM EXIT
+            </button>
+
+            <button class="btn btn-stop" onclick="sendCommand('stop')">
+                <i class="fas fa-exclamation-triangle"></i> EMERGENCY STOP
+            </button>
+        </section>
+
+        <div id="console">
+            <div class="log-entry">SYSTEM INIT: Awaiting process command...</div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
