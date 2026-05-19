@@ -1,6 +1,6 @@
 # Dual Arm Robot 프로젝트 가이드
 
-이 프로젝트는 SO-100 로봇 팔을 활용하여 데이터를 수집하고, ACT(Action Chunking Transformer) 모델을 학습시키며, 실시간 자연어 명령 제어를 통해 로봇을 동작시키는 시스템입니다.
+이 프로젝트는 자체 제작 양팔 로봇 팔을 활용하여 데이터를 수집하고, ACT(Action Chunking Transformer) 모델을 학습시키며, 실시간 자연어 명령 제어를 통해 로봇을 동작시키는 시스템입니다.
 
 ---
 
