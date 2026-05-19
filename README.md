@@ -4,6 +4,12 @@
 
 ---
 
+## Demo
+
+<p align="center">
+  <img src="assets/demo.gif" width="600">
+</p>
+
 ## 1. 데이터 수집 (Data Collection)
 이 프로젝트에서는 데이터 수집 시 카메라를 2개 또는 3개 사용할 수 있습니다.
 
