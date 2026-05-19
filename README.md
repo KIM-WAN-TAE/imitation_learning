@@ -5,10 +5,30 @@
 ---
 
 ## 1. 데이터 수집 (Data Collection)
+이 프로젝트에서는 데이터 수집 시 카메라를 2개 또는 3개 사용할 수 있습니다.
 
-로봇의 움직임과 카메라 영상을 기록하여 학습용 데이터셋을 생성합니다.
+현재 코드에서 사용하는 카메라 이름은 다음과 같습니다.
 
-### 카메라 2개 사용 (Laptop + Realsense)
+| 코드에서 사용하는 이름 | 실제 카메라 | 실제 시점 |
+|---|---|---|
+| `realsense` | RealSense D435 | Top View, 작업 공간을 위에서 바라보는 카메라 |
+| `laptop` | OV9726 USB Camera | Robot View, 로봇 또는 그리퍼 근처 시점 카메라 |
+| `extra_cam` | OV9726 USB Camera | Body View, 로봇 몸체 또는 전체 작업 공간 시점 카메라 |
+
+데이터셋에는 예를 들어 다음과 같은 feature 이름으로 이미지가 저장됩니다.
+```text
+observation.images.realsense
+observation.images.laptop
+observation.images.extra_cam
+```
+---
+## 카메라 2개 사용: Top View + Robot View
+
+이 설정은 다음 두 카메라를 사용합니다.
+
+- `realsense`: RealSense D435, Top View
+- `laptop`: OV9726 USB Camera, Robot View
+
 ```bash
 python -m dual_arm.scripts.lerobot_record \
 --robot.type=so100_follower \
@@ -24,7 +44,16 @@ python -m dual_arm.scripts.lerobot_record \
 --display_data=true
 ```
 
-### 카메라 3개 사용 (Laptop + Extra + Realsense)
+---
+
+## 카메라 3개 사용: Top View + Robot View + Body View
+
+이 설정은 다음 세 카메라를 사용합니다.
+
+- `realsense`: RealSense D435, Top View
+- `laptop`: OV9726 USB Camera, Robot View
+- `extra_cam`: OV9726 USB Camera, Body View
+
 ```bash
 python -m dual_arm.scripts.lerobot_record \
 --robot.type=so100_follower \
@@ -38,6 +67,36 @@ python -m dual_arm.scripts.lerobot_record \
 --dataset.single_task="Pick the cube" \
 --dataset.fps=20 \
 --display_data=true
+```
+
+---
+
+## 카메라 장치 번호 확인
+
+USB 카메라는 재부팅하거나 다시 연결하면 `/dev/video8`, `/dev/video10` 같은 장치 번호가 바뀔 수 있습니다.
+
+녹화 전에 아래 명령어로 카메라 장치 번호를 확인합니다.
+
+```bash
+v4l2-ctl --list-devices
+```
+
+또는:
+
+```bash
+ls /dev/video*
+```
+
+RealSense 카메라의 serial number는 다음 명령어로 확인할 수 있습니다.
+
+```bash
+rs-enumerate-devices
+```
+
+현재 예시에서는 RealSense D435의 serial number를 다음 값으로 사용합니다.
+
+```text
+048522072070
 ```
 
 ---
