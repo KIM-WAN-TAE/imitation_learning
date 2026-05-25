@@ -14,6 +14,8 @@ class RobotMode(str, Enum):
     POLICY = "policy"
     RESET_HOME = "reset_home"
     EXIT = "exit"
+    PACKAGE_START = "package_start"
+    PACKAGE_COMPLETE = "package_complete"
 
 
 class ObjectColor(str, Enum):
@@ -30,9 +32,9 @@ class CommandState:
     raw_text: str = ""
     version: int = 0
 
-GREEN_POLICY_PATH = ("/home/roma/pt/outputs/triple_camera/chunk80/010000/pretrained_model")
-RED_POLICY_PATH = ("/home/roma/pt/outputs/triple_camera/red_0518_chunk80/checkpoints/010000/pretrained_model")
-BLUE_POLICY_PATH = ("/home/roma/pt/outputs/triple_camera/blue_0518_chunk80/checkpoints/010000/pretrained_model")
+GREEN_POLICY_PATH = ("/home/roma/pt/outputs/triple_camera/act/green_0520_chunk140/checkpoints/010000/pretrained_model")
+RED_POLICY_PATH = ("/home/roma/pt/outputs/triple_camera/act/red_0518_chunk80/checkpoints/010000/pretrained_model")
+BLUE_POLICY_PATH = ("/home/roma/pt/outputs/triple_camera/act/blue_0520_chunk130/checkpoints/010000/pretrained_model")
 
 POLICY_REGISTRY = {
     ObjectColor.GREEN: os.getenv("GREEN_POLICY_PATH", GREEN_POLICY_PATH),
@@ -40,9 +42,10 @@ POLICY_REGISTRY = {
     ObjectColor.BLUE: os.getenv("BLUE_POLICY_PATH", BLUE_POLICY_PATH),
 }
 
-COMMAND_HOST = os.getenv("COMMAND_HOST", "127.0.0.1")
+# COMMAND_HOST = os.getenv("COMMAND_HOST", "127.0.0.1")
+# COMMAND_PORT = int(os.getenv("COMMAND_PORT", "8765"))
+COMMAND_HOST = os.getenv("COMMAND_HOST", "192.168.0.3")
 COMMAND_PORT = int(os.getenv("COMMAND_PORT", "8765"))
-
 
 def parse_command(text: str) -> tuple[RobotMode, ObjectColor]:
     """
@@ -52,6 +55,12 @@ def parse_command(text: str) -> tuple[RobotMode, ObjectColor]:
 
     if any(keyword in normalized for keyword in ("종료", "끝내", "끝", "exit", "quit", "q")):
         return RobotMode.EXIT, ObjectColor.NONE
+
+    if any(keyword in normalized for keyword in ("포장시작", "포장 시작", "package start", "package_start")):
+        return RobotMode.PACKAGE_START, ObjectColor.NONE
+
+    if any(keyword in normalized for keyword in ("포장종료", "포장 종료", "포장완료", "package end", "package_end", "package complete", "package_complete")):
+        return RobotMode.PACKAGE_COMPLETE, ObjectColor.NONE
 
     if any(keyword in normalized for keyword in ("초기화", "원위치", "홈", "home", "reset")):
         return RobotMode.RESET_HOME, ObjectColor.NONE

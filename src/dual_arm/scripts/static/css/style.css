@@ -127,8 +127,16 @@ header p {
 .btn-stop i { color: #c53030; }
 .btn-stop:hover i { color: white; }
 
-.btn-home { grid-column: span 1.5; }
-.btn-exit { grid-column: span 1.5; color: var(--text-dim); }
+.btn-package-start { color: #8e44ad; }
+.btn-package-start i { color: #8e44ad; }
+.btn-package-start:hover { background: #8e44ad; color: white; border-color: #8e44ad; }
+
+.btn-package-complete { color: #2980b9; }
+.btn-package-complete i { color: #2980b9; }
+.btn-package-complete:hover { background: #2980b9; color: white; border-color: #2980b9; }
+
+.btn-home { grid-column: span 1; }
+.btn-exit { grid-column: span 1; color: var(--text-dim); }
 
 #console {
     margin-top: 2rem;

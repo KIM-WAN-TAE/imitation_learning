@@ -615,7 +615,7 @@ def record_loop(
 
     timestamp = 0
     loop_count = 0
-    start_episode_t = None  # 초기 지연 제외를 위해 None으로 시작
+    start_episode_t = time.perf_counter()
 
     recent_fps_window = deque(maxlen=10)
     recent_avg_fps = float(fps)
@@ -729,10 +729,6 @@ def record_loop(
                     last_idle_log_t = now
                 precise_sleep(max(target_dt - (time.perf_counter() - start_loop_t), 0))
                 continue
-
-            # 실제 동작 시작 시점에 시간 기록 (초기 지연 제외)
-            if start_episode_t is None:
-                start_episode_t = time.perf_counter()
 
             if mode == RobotMode.POLICY:
                 # [개선] 데이터셋이 없어도 추론은 가능해야 하므로 조건 분리
@@ -896,7 +892,7 @@ def record_loop(
             fps_gap = fps - current_fps
             prev_loop_fps_gap_large = fps_gap >= fps_reuse_threshold
 
-            if loop_count % fps == 0 and start_episode_t is not None:
+            if loop_count % fps == 0:
                 avg_fps = loop_count / (time.perf_counter() - start_episode_t)
                 print(
                     f"[실시간 정보] 모드: {mode.value} | 타겟: {target_color.value} | 목표 FPS: {fps} | 실제 평균 FPS: {avg_fps:.2f} "

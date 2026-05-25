@@ -26,6 +26,8 @@ def handle_command():
         "green": "green",
         "red": "red",
         "blue": "blue",
+        "package_start": "package_start",
+        "package_complete": "package_complete",
         "stop": "stop",
         "home": "home",
         "exit": "exit",
