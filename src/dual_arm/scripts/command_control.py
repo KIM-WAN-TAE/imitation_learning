@@ -32,14 +32,20 @@ class CommandState:
     raw_text: str = ""
     version: int = 0
 
-GREEN_POLICY_PATH = ("/home/roma/pt/outputs/triple_camera/act/green_0520_chunk140/checkpoints/010000/pretrained_model")
-RED_POLICY_PATH = ("/home/roma/pt/outputs/triple_camera/act/red_0518_chunk80/checkpoints/010000/pretrained_model")
-BLUE_POLICY_PATH = ("/home/roma/pt/outputs/triple_camera/act/blue_0520_chunk130/checkpoints/010000/pretrained_model")
+GREEN_POLICY_PATH = ("/home/roma/pt/outputs/triple_camera/act/green_0529_chunk100/checkpoints/010000/pretrained_model")
+RED_POLICY_PATH = ("/home/roma/pt/outputs/triple_camera/act/red_0529_chunk100/checkpoints/010000/pretrained_model")
+BLUE_POLICY_PATH = ("/home/roma/pt/outputs/triple_camera/act/blue_0529_chunk80/checkpoints/010000/pretrained_model")
 
 POLICY_REGISTRY = {
     ObjectColor.GREEN: os.getenv("GREEN_POLICY_PATH", GREEN_POLICY_PATH),
     ObjectColor.RED: os.getenv("RED_POLICY_PATH", RED_POLICY_PATH),
     ObjectColor.BLUE: os.getenv("BLUE_POLICY_PATH", BLUE_POLICY_PATH),
+}
+
+CHUNK_REGISTRY = {
+    ObjectColor.GREEN: int(os.getenv("GREEN_CHUNK_SIZE", "100")),
+    ObjectColor.RED: int(os.getenv("RED_CHUNK_SIZE", "100")),
+    ObjectColor.BLUE: int(os.getenv("BLUE_CHUNK_SIZE", "80")),
 }
 
 # COMMAND_HOST = os.getenv("COMMAND_HOST", "127.0.0.1")
@@ -228,6 +234,10 @@ def set_command_idle(command_state: Optional[CommandState], state_lock):
 
 def get_policy_path_for_color(target_color: ObjectColor) -> str | None:
     return POLICY_REGISTRY.get(target_color)
+
+
+def get_chunk_size_for_color(target_color: ObjectColor) -> int | None:
+    return CHUNK_REGISTRY.get(target_color)
 
 
 if __name__ == "__main__":

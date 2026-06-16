@@ -111,7 +111,7 @@ class SOFollower(Robot):
         self._all_acc_values = self._expand_motor_values(
             config.profile_accelerations,
             self._motor_names,
-            200,
+            100,
         )
 
         self._home_vel_values = self._expand_motor_values(
@@ -407,6 +407,8 @@ class SOFollower(Robot):
             for motor in self.bus.motors:
                 motor_id = self.bus.motors[motor].id
 
+                self.bus.write("Shutdown", motor, 20, normalize=False)
+
                 if motor_id in self.EXTENDED_POSITION_MOTOR_IDS:
                     self.bus.write(
                         "Operating_Mode",
@@ -423,6 +425,14 @@ class SOFollower(Robot):
                     )
 
                 if motor == "shoulder_pan":
+                    # PID 제어 값 임의 설정 (XL430-W250 기준)
+                    self.bus.write("Position_P_Gain", motor, 2000, normalize=False)
+                    self.bus.write("Position_I_Gain", motor, 0, normalize=False)
+                    self.bus.write("Position_D_Gain", motor, 3600, normalize=False)
+                    logger.info(f"[PID SET] {motor}: P=2000, I=0, D=3600")
+
+
+                if motor == "shoulder_lift":
                     # PID 제어 값 임의 설정 (XL430-W250 기준)
                     self.bus.write("Position_P_Gain", motor, 2000, normalize=False)
                     self.bus.write("Position_I_Gain", motor, 0, normalize=False)
@@ -540,17 +550,17 @@ class SOFollower(Robot):
                 corrected_val = max(1080, min(3120, corrected_val))
 
             if motor_name == "gripper":
-                # 타겟 색상에 따른 동적 그리퍼 범위 설정
+                #타겟 색상에 따른 동적 그리퍼 범위 설정
                 if self.current_target_color == "green":
                     if corrected_val >3300:
                         corrected_val = 3869
-                    corrected_val = max(3050, min(4000, corrected_val))
+                    corrected_val = max(2508, min(4000, corrected_val))
                 elif self.current_target_color == "red":
-                    if corrected_val >3500:
+                    if corrected_val >3200:
                         corrected_val = 3869
-                    corrected_val = max(3200, min(4000, corrected_val))
+                    corrected_val = max(2398, min(4000, corrected_val))
                 elif self.current_target_color == "blue":
-                    corrected_val = max(2770, min(4000, corrected_val))
+                    corrected_val = max(2089, min(3600, corrected_val))
                 else:
                     # 기본 범위 (none 또는 기타)
                     corrected_val = max(2600, min(4000, corrected_val))

@@ -114,8 +114,10 @@ from dual_arm.scripts.return_to_origin import return_to_origin
 from dual_arm.scripts.command_control import (
     CommandState,
     ObjectColor,
+    POLICY_REGISTRY,
     RobotMode,
     get_policy_path_for_color,
+    get_chunk_size_for_color,
     set_command_idle,
     snapshot_command,
     start_command_server,
@@ -520,13 +522,38 @@ def make_policy_runtime(
     policy_path: str,
     dataset: LeRobotDataset,
     rename_map: dict[str, str],
+    chunk_size: int | None = None,
 ) -> PolicyRuntime:
     path = str(policy_path)
     if not Path(path).exists():
         raise FileNotFoundError(f"Policy path does not exist: {path}")
 
     cli_overrides = parser.get_cli_overrides("policy")
-    policy_cfg = PreTrainedConfig.from_pretrained(path, cli_overrides=cli_overrides)
+    
+    # draccus 오버라이드를 위한 리스트 초기화 (예: ["--chunk_size", "80"])
+    overrides_list = []
+    
+    # 기존 cli_overrides가 있다면 통합
+    if isinstance(cli_overrides, list):
+        for item in cli_overrides:
+            if "=" in item:
+                k, v = item.split("=", 1)
+                overrides_list.extend([f"--{k.lstrip('-')}", str(v)])
+            elif item.startswith("-"):
+                # 이미 -- 형식인 경우 그대로 유지 (다음 인자가 값이라고 가정)
+                overrides_list.append(item)
+    elif isinstance(cli_overrides, dict):
+        for k, v in cli_overrides.items():
+            overrides_list.extend([f"--{k.lstrip('-')}", str(v)])
+
+    # 신규 chunk_size 오버라이드 적용
+    if chunk_size is not None:
+        logging.info(f"[Command] Overriding chunk_size to {chunk_size} via cli_overrides for {path}")
+        # 이미 리스트에 있다면 갱신하거나 추가
+        overrides_list.extend(["--chunk_size", str(chunk_size)])
+        overrides_list.extend(["--n_action_steps", str(chunk_size)])
+
+    policy_cfg = PreTrainedConfig.from_pretrained(path, cli_overrides=overrides_list)
     policy_cfg.pretrained_path = path
 
     policy = make_policy(policy_cfg, ds_meta=dataset.meta)
@@ -553,11 +580,12 @@ def get_or_load_policy_runtime(
     policy_runtime_cache: dict[str, PolicyRuntime],
     dataset: LeRobotDataset,
     rename_map: dict[str, str],
+    chunk_size: int | None = None,
 ) -> PolicyRuntime:
     path = str(policy_path)
     if path not in policy_runtime_cache:
-        logging.info("[Command] Loading full policy: %s", path)
-        policy_runtime_cache[path] = make_policy_runtime(path, dataset, rename_map)
+        logging.info("[Command] Loading full policy: %s (chunk_size=%s)", path, chunk_size)
+        policy_runtime_cache[path] = make_policy_runtime(path, dataset, rename_map, chunk_size=chunk_size)
 
     return policy_runtime_cache[path]
 
@@ -737,6 +765,7 @@ def record_loop(
             if mode == RobotMode.POLICY:
                 # [개선] 데이터셋이 없어도 추론은 가능해야 하므로 조건 분리
                 target_policy_path = get_policy_path_for_color(target_color)
+                target_chunk_size = get_chunk_size_for_color(target_color)
                 
                 # 만약 command_control에 설정된 경로가 없으면, 현재 실행 시 로드된 기본 정책 경로 사용
                 if not target_policy_path and active_policy_path:
@@ -747,13 +776,14 @@ def record_loop(
                         policy_runtime_cache = {}
                     
                     if active_policy_path != target_policy_path:
-                        logging.info(f"[Command] 정책 교체 시도: {target_policy_path}")
+                        logging.info(f"[Command] 정책 교체 시도: {target_policy_path} (chunk_size={target_chunk_size})")
                         try:
                             runtime = get_or_load_policy_runtime(
                                 policy_path=target_policy_path,
                                 policy_runtime_cache=policy_runtime_cache,
                                 dataset=dataset,
                                 rename_map=dataset_rename_map or {},
+                                chunk_size=target_chunk_size,
                             )
 
                             logging.info(f"[Command] 정책 로드 완료: {runtime.path}")
@@ -990,6 +1020,20 @@ def record(cfg: RecordConfig) -> LeRobotDataset:
         policy_runtime_cache: dict[str, PolicyRuntime] = {}
 
         if cfg.policy is not None:
+            # 초기 로드되는 정책의 색상을 판별하여 chunk_size 적용
+            initial_color = ObjectColor.NONE
+            for color, path in POLICY_REGISTRY.items():
+                if str(cfg.policy.pretrained_path) == str(path):
+                    initial_color = color
+                    break
+            
+            initial_chunk_size = get_chunk_size_for_color(initial_color)
+            if initial_chunk_size is not None:
+                logging.info(f"[Init] Overriding initial policy chunk_size to {initial_chunk_size}")
+                cfg.policy.chunk_size = initial_chunk_size
+                if hasattr(cfg.policy, "n_action_steps") and getattr(cfg.policy, "temporal_ensemble_coeff", None) is None:
+                    cfg.policy.n_action_steps = initial_chunk_size
+
             preprocessor, postprocessor = make_pre_post_processors(
                 policy_cfg=cfg.policy,
                 pretrained_path=cfg.policy.pretrained_path,
@@ -1000,6 +1044,7 @@ def record(cfg: RecordConfig) -> LeRobotDataset:
                 },
             )
             if policy is not None and preprocessor is not None and postprocessor is not None:
+                # 초기 정책을 캐시에 넣을 때도 적용된 설정 유지
                 policy_runtime_cache[str(cfg.policy.pretrained_path)] = PolicyRuntime(
                     path=str(cfg.policy.pretrained_path),
                     policy=policy,

@@ -44,7 +44,7 @@ class SOFollowerConfig:
     gear_ratios: dict[str, float] = field(default_factory=lambda: {
         "shoulder_pan": 15.0,
         "shoulder_lift": 15.0,
-        "elbow_pitch": 5.0,
+        "elbow_pitch": 9.0,
         "elbow_roll": 9.0,
         "wrist_yaw": 1.0,
         "wrist_roll": 1.0,
@@ -101,7 +101,7 @@ class SOFollowerConfig:
     profile_accelerations: dict[str, int] = field(default_factory=lambda: {
         "shoulder_pan": 400,
         "shoulder_lift": 400,
-        "elbow_pitch": 220,
+        "elbow_pitch": 300,
         "elbow_roll": 300,
         "wrist_yaw": 120,
         "wrist_roll": 120,
@@ -109,10 +109,23 @@ class SOFollowerConfig:
         "gripper": 50,
     })
 
+
+    work_profile_velocities: dict[str, int] = field(default_factory=lambda: {
+        "shoulder_pan": 2800,
+        "shoulder_lift": 2800,
+        "elbow_pitch": 2000,
+        "elbow_roll": 2000,
+        "wrist_yaw": 550,
+        "wrist_roll": 550,
+        "wrist_pitch": 550,
+        "gripper": 150,
+    })
+
+
     home_profile_velocities: dict[str, int] = field(default_factory=lambda: {
         "shoulder_pan": 800,
         "shoulder_lift": 800,
-        "elbow_pitch": 500,
+        "elbow_pitch": 700,
         "elbow_roll": 700,
         "wrist_yaw": 300,
         "wrist_roll": 300,
@@ -120,16 +133,7 @@ class SOFollowerConfig:
         "gripper": 150,
     })
 
-    work_profile_velocities: dict[str, int] = field(default_factory=lambda: {
-        "shoulder_pan": 2800,
-        "shoulder_lift": 2800,
-        "elbow_pitch": 1300,
-        "elbow_roll": 2000,
-        "wrist_yaw": 550,
-        "wrist_roll": 550,
-        "wrist_pitch": 550,
-        "gripper": 150,
-    })
+
         # 관측(Observation) 데이터 설정
     camera_max_age_ms: int = 200       # 카메라 프레임의 최대 허용 지연 시간 (밀리초)
     obs_skip_cameras: bool = False     # 관측 데이터에서 카메라 이미지 제외 여부

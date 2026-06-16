@@ -530,30 +530,24 @@ def make_policy_runtime(
 
     cli_overrides = parser.get_cli_overrides("policy")
     
-    # draccus 오버라이드를 위한 리스트 초기화 (예: ["--chunk_size", "80"])
-    overrides_list = []
-    
-    # 기존 cli_overrides가 있다면 통합
+    # 리스트 형태인 경우 딕셔너리로 변환 (draccus 오버라이드 호환성)
     if isinstance(cli_overrides, list):
+        new_overrides = {}
         for item in cli_overrides:
             if "=" in item:
                 k, v = item.split("=", 1)
-                overrides_list.extend([f"--{k.lstrip('-')}", str(v)])
-            elif item.startswith("-"):
-                # 이미 -- 형식인 경우 그대로 유지 (다음 인자가 값이라고 가정)
-                overrides_list.append(item)
-    elif isinstance(cli_overrides, dict):
-        for k, v in cli_overrides.items():
-            overrides_list.extend([f"--{k.lstrip('-')}", str(v)])
+                new_overrides[k.lstrip("-")] = v
+        cli_overrides = new_overrides
+    elif cli_overrides is None:
+        cli_overrides = {}
 
-    # 신규 chunk_size 오버라이드 적용
+    # chunk_size 오버라이드 적용
     if chunk_size is not None:
         logging.info(f"[Command] Overriding chunk_size to {chunk_size} via cli_overrides for {path}")
-        # 이미 리스트에 있다면 갱신하거나 추가
-        overrides_list.extend(["--chunk_size", str(chunk_size)])
-        overrides_list.extend(["--n_action_steps", str(chunk_size)])
+        cli_overrides["chunk_size"] = chunk_size
+        cli_overrides["n_action_steps"] = chunk_size
 
-    policy_cfg = PreTrainedConfig.from_pretrained(path, cli_overrides=overrides_list)
+    policy_cfg = PreTrainedConfig.from_pretrained(path, cli_overrides=cli_overrides)
     policy_cfg.pretrained_path = path
 
     policy = make_policy(policy_cfg, ds_meta=dataset.meta)
@@ -643,7 +637,7 @@ def record_loop(
 
     timestamp = 0
     loop_count = 0
-    start_episode_t = time.perf_counter()
+    start_episode_t = None  # 초기 지연 제외를 위해 None으로 시작
 
     recent_fps_window = deque(maxlen=10)
     recent_avg_fps = float(fps)
@@ -757,6 +751,10 @@ def record_loop(
                     last_idle_log_t = now
                 precise_sleep(max(target_dt - (time.perf_counter() - start_loop_t), 0))
                 continue
+
+            # 실제 동작 시작 시점에 시간 기록 (초기 지연 제외)
+            if start_episode_t is None:
+                start_episode_t = time.perf_counter()
 
             if mode == RobotMode.POLICY:
                 # [개선] 데이터셋이 없어도 추론은 가능해야 하므로 조건 분리
@@ -922,7 +920,7 @@ def record_loop(
             fps_gap = fps - current_fps
             prev_loop_fps_gap_large = fps_gap >= fps_reuse_threshold
 
-            if loop_count % fps == 0:
+            if loop_count % fps == 0 and start_episode_t is not None:
                 avg_fps = loop_count / (time.perf_counter() - start_episode_t)
                 print(
                     f"[실시간 정보] 모드: {mode.value} | 타겟: {target_color.value} | 목표 FPS: {fps} | 실제 평균 FPS: {avg_fps:.2f} "
@@ -1016,6 +1014,20 @@ def record(cfg: RecordConfig) -> LeRobotDataset:
         policy_runtime_cache: dict[str, PolicyRuntime] = {}
 
         if cfg.policy is not None:
+            # 초기 로드되는 정책의 색상을 판별하여 chunk_size 적용
+            initial_color = ObjectColor.NONE
+            for color, path in POLICY_REGISTRY.items():
+                if str(cfg.policy.pretrained_path) == str(path):
+                    initial_color = color
+                    break
+            
+            initial_chunk_size = get_chunk_size_for_color(initial_color)
+            if initial_chunk_size is not None:
+                logging.info(f"[Init] Overriding initial policy chunk_size to {initial_chunk_size}")
+                cfg.policy.chunk_size = initial_chunk_size
+                if hasattr(cfg.policy, "n_action_steps") and getattr(cfg.policy, "temporal_ensemble_coeff", None) is None:
+                    cfg.policy.n_action_steps = initial_chunk_size
+
             preprocessor, postprocessor = make_pre_post_processors(
                 policy_cfg=cfg.policy,
                 pretrained_path=cfg.policy.pretrained_path,
@@ -1026,6 +1038,7 @@ def record(cfg: RecordConfig) -> LeRobotDataset:
                 },
             )
             if policy is not None and preprocessor is not None and postprocessor is not None:
+                # 초기 정책을 캐시에 넣을 때도 적용된 설정 유지
                 policy_runtime_cache[str(cfg.policy.pretrained_path)] = PolicyRuntime(
                     path=str(cfg.policy.pretrained_path),
                     policy=policy,
